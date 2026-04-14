@@ -26,16 +26,25 @@
     </section>
     <div class="customer-content2">
       <h2 class="customer-menu-title">Menu</h2>
+      {% if table_link_mode %}
+      <p class="customer-subtitle">You are ordering for Table {{ preset_table_id }} from its QR link.</p>
+      {% else %}
       <p class="customer-subtitle">Pick your table and choose quantities to place the order.</p>
+      {% endif %}
 
       <form method="POST" id="customerOrderForm">
-        <div class="table_selection">
+        <div class="table_selection" {% if table_link_mode %}hidden{% endif %}>
         <label>Table</label>
         <input type="hidden" id="table" name="table" required>
         <button type="button" id="selectedTableToggle" class="table-card table-selected-toggle" hidden></button>
         <div class="table-grid" id="tableGrid">
           {% for table in tables %}
-          <button type="button" class="table-card" data-table="{{table.id}}">Table {{table.id}}</button>
+          <button
+            type="button"
+            class="table-card"
+            data-table="{{table.id}}"
+            data-link="{{ url_for('customer_table_landing', table_id=table.id) }}"
+          >Table {{table.id}}</button>
           {% endfor %}
         </div>
         </div>
@@ -95,6 +104,8 @@
 
   <script>
     (function () {
+      const presetTableId = {{ preset_table_id|tojson }};
+      const tableLinkMode = {{ table_link_mode|tojson }};
       const tableInput = document.getElementById("table");
       const tableButtons = Array.from(document.querySelectorAll("#tableGrid .table-card"));
       const selectedTableToggle = document.getElementById("selectedTableToggle");
@@ -165,7 +176,7 @@
         const hasSelection = Boolean(tableInput && tableInput.value);
 
         if (selectedTableToggle) {
-          if (hasSelection) {
+          if (hasSelection && !tableLinkMode) {
             selectedTableToggle.hidden = false;
             selectedTableToggle.textContent = "Table " + tableInput.value + " (change)";
           } else {
@@ -175,11 +186,11 @@
         }
 
         if (tableGrid) {
-          tableGrid.hidden = hasSelection;
+          tableGrid.hidden = tableLinkMode || hasSelection;
         }
 
         if (menuSection) menuSection.hidden = !hasSelection;
-        if (hint) hint.hidden = hasSelection;
+        if (hint) hint.hidden = tableLinkMode || hasSelection;
         if (totalAmountEl) totalAmountEl.hidden = !hasSelection;
         if (placeOrderBtn) {
           placeOrderBtn.disabled = !hasSelection;
@@ -215,12 +226,19 @@
 
       tableButtons.forEach((btn) => {
         btn.addEventListener("click", function () {
-          selectTable(this.getAttribute("data-table") || "");
+          const tableId = this.getAttribute("data-table") || "";
+          const tableLink = this.getAttribute("data-link") || "";
+          if (tableLink && !tableLinkMode) {
+            window.location.href = tableLink;
+            return;
+          }
+          selectTable(tableId);
         });
       });
 
       if (selectedTableToggle) {
         selectedTableToggle.addEventListener("click", function () {
+          if (tableLinkMode) return;
           if (tableGrid) tableGrid.hidden = false;
           selectedTableToggle.hidden = true;
         });
@@ -488,11 +506,15 @@
         });
       }
 
-      // Restore last selected table after reload.
-      try {
-        const saved = window.localStorage.getItem(STORAGE_KEY);
-        if (saved) selectTable(saved, { silent: true });
-      } catch (_) { }
+      if (presetTableId) {
+        selectTable(String(presetTableId), { silent: true });
+      } else {
+        // Restore last selected table after reload.
+        try {
+          const saved = window.localStorage.getItem(STORAGE_KEY);
+          if (saved) selectTable(saved, { silent: true });
+        } catch (_) { }
+      }
 
       updateTotal();
       updateVisibility();

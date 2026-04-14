@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, session, url_for
+from flask import Flask, render_template, request, jsonify, redirect, session, url_for, abort
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
 import json
@@ -97,6 +97,16 @@ def reset_table_sequence_if_empty(conn):
     row = conn.execute("SELECT COUNT(*) AS cnt FROM tables").fetchone()
     if row and row["cnt"] == 0:
         conn.execute("DELETE FROM sqlite_sequence WHERE name='tables'")
+
+
+def table_exists(db, table_id) -> bool:
+    try:
+        table_num = int(table_id)
+    except (TypeError, ValueError):
+        return False
+    row = db.execute("SELECT 1 FROM tables WHERE id=? LIMIT 1", (table_num,)).fetchone()
+    return row is not None
+
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -274,15 +284,43 @@ def owner():
 
 
 # CUSTOMER PAGE
-@app.route("/customer", methods=["GET","POST"])
-def customer():
+@app.route("/customer/table<int:table_id>", methods=["GET"])
+def customer_table_landing(table_id):
     db = get_db()
+    if not table_exists(db, table_id):
+        abort(404)
+
+    return render_template(
+        "customer_table_landing.html",
+        table_id=table_id,
+        cache_bust=int(pytime.time()),
+    )
+
+
+@app.route("/customer", methods=["GET", "POST"])
+@app.route("/customer/table<int:table_id>/order", methods=["GET", "POST"])
+def customer(table_id=None):
+    db = get_db()
+    selected_table_id = table_id
+
+    if selected_table_id is None:
+        table_raw = (request.args.get("table") or "").strip()
+        if table_raw:
+            try:
+                selected_table_id = int(table_raw)
+            except (TypeError, ValueError):
+                selected_table_id = None
+
+    selected_table_valid = selected_table_id is not None and table_exists(db, selected_table_id)
 
     if request.method == "POST":
         table = request.form.get("table", "").strip()
         foods = request.form.getlist("foods")
         qtys = request.form.getlist("qtys")
         added = False
+
+        if not table_exists(db, table):
+            table = ""
 
         if table and foods and qtys:
             for food, qty_raw in zip(foods, qtys):
@@ -329,7 +367,12 @@ def customer():
     tables = db.execute("SELECT * FROM tables ORDER BY id ASC").fetchall()
 
     return render_template(
-        "customer.html", menu=menu, tables=tables, cache_bust=int(pytime.time())
+        "customer.html",
+        menu=menu,
+        tables=tables,
+        cache_bust=int(pytime.time()),
+        preset_table_id=selected_table_id if selected_table_valid else None,
+        table_link_mode=selected_table_valid,
     )
 
 

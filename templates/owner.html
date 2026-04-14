@@ -87,7 +87,15 @@ Delete
 {% for table in tables %}
 <li class="owner-row">
 <span>
+<a href="{{ url_for('customer_table_landing', table_id=table.id, _external=True) }}" target="_blank" rel="noopener noreferrer">
 Table {{table.id}}
+</a>
+<br>
+<small>
+<a href="{{ url_for('customer_table_landing', table_id=table.id, _external=True) }}" target="_blank" rel="noopener noreferrer">
+{{ url_for('customer_table_landing', table_id=table.id, _external=True) }}
+</a>
+</small>
 </span>
 <form method="POST">
 <button

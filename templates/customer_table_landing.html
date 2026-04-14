@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Table {{ table_id }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5ead8;
+      --card: rgba(255, 252, 245, 0.92);
+      --ink: #2f1f11;
+      --muted: #6d5030;
+      --brand: #7a3414;
+      --brand-2: #d97706;
+      --line: rgba(122, 52, 20, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "DM Sans", Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(255, 199, 95, 0.45), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(195, 92, 33, 0.2), transparent 28%),
+        linear-gradient(180deg, #f7efdf 0%, var(--bg) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 14px;
+    }
+
+    .welcome-shell {
+      width: min(100%, 460px);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(78, 39, 12, 0.18);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero-photo {
+      width: 100%;
+      height: 260px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .welcome-body {
+      padding: 22px 20px 24px;
+    }
+
+    .table-badge {
+      display: inline-block;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(217, 119, 6, 0.14);
+      color: var(--brand);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      text-transform: uppercase;
+    }
+
+    .hotel-title {
+      margin: 14px 0 10px;
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(30px, 6vw, 40px);
+      line-height: 1.05;
+    }
+
+    .hotel-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .hotel-points {
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .hotel-points li {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(122, 52, 20, 0.08);
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .start-wrap {
+      margin-top: 22px;
+    }
+
+    .start-btn {
+      display: block;
+      width: 100%;
+      padding: 16px 18px;
+      border: 0;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      color: #fff;
+      text-align: center;
+      text-decoration: none;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      box-shadow: 0 16px 30px rgba(122, 52, 20, 0.22);
+    }
+
+    .start-note {
+      margin-top: 10px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <main class="welcome-shell">
+    <img
+      class="hero-photo"
+      src="{{ url_for('static', filename='front/slider-1.webp') }}?v={{ cache_bust }}"
+      alt="Hotel special dishes"
+    >
+    <div class="welcome-body">
+      <div class="table-badge">Table {{ table_id }}</div>
+      <h1 class="hotel-title">Welcome to Hotel Name</h1>
+      <p class="hotel-copy">
+        Welcome to our hotel. Enjoy fresh food, quick service, and a smooth table ordering experience.
+        This page is for Table {{ table_id }}, and your order will go directly to this table.
+      </p>
+
+      <ul class="hotel-points">
+        <li>Hotel photo shown from slider-1.webp</li>
+        <li>Freshly prepared food with live order updates</li>
+        <li>Your order is linked to Table {{ table_id }}</li>
+      </ul>
+
+      <div class="start-wrap">
+        <a class="start-btn" href="{{ url_for('customer', table_id=table_id) }}">Click Here to Order</a>
+        <div class="start-note">Tap to open ordering for Table {{ table_id }}</div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
