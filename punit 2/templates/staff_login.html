@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ role }} Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/owner.css">
+</head>
+
+<body>
+  <div class="owner-container">
+    <header class="owner-header">
+      <div class="owner-badge">✦ Restaurant Control
+        <h1>{{ role }} Login</h1>
+      </div>
+      <a class="owner-home-top" href="/">Home</a>
+    </header>
+
+    <div class="owner-divider"></div>
+
+    <section class="owner-card">
+      <h2>Enter Password</h2>
+
+      {% if error %}
+        <div class="owner-error">{{ error }}</div>
+      {% endif %}
+
+      <form method="POST" class="owner-inline-form" action="{{ action_url }}">
+        <input type="password" name="password" placeholder="Password" autocomplete="current-password" required>
+        {% if next_url %}
+          <input type="hidden" name="next" value="{{ next_url }}">
+        {% endif %}
+        <button type="submit">Login</button>
+      </form>
+    </section>
+  </div>
+</body>
+</html>
+

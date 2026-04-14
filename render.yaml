@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: punit
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -b 0.0.0.0:$PORT wsgi:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+

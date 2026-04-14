@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing Counter</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/billing.css">
+</head>
+
+<body class="billing-page">
+
+<a href="/" class="corner-home">Home</a>
+<a href="/billing_history" class="corner-history">History</a>
+<a href="/billing_logout" class="corner-logout">Logout</a>
+
+<h1>Billing Counter</h1>
+
+{% if bills %}
+  {% for bill in bills %}
+    <div class="bill-card">
+      <div class="bill-head">
+        <div class="bill-title">Table {{ bill["table_id"] }}</div>
+        <div class="bill-actions">
+          <a class="bill-print" href="/billing_print?table_id={{ bill['table_id'] }}" target="_blank" rel="noopener">Print Bill</a>
+          <form method="POST">
+            <input type="hidden" name="table_id" value="{{ bill["table_id"] }}">
+            <button name="bill_accept" value="1" type="submit">Accept Bill</button>
+          </form>
+        </div>
+      </div>
+
+      <table>
+        <tr>
+          <th>Item</th>
+          <th>Qty</th>
+          <th>Price</th>
+          <th>Total</th>
+        </tr>
+        {% for it in bill["items"] %}
+        <tr>
+          <td>{{ it.food }}</td>
+          <td>{{ it.qty }}</td>
+          <td>₹{{ it.price }}</td>
+          <td>₹{{ it.line_total }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+
+      <div class="bill-total">Total: ₹{{ bill["total"] }}</div>
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="empty-note">No ready bills.</div>
+{% endif %}
+
+</body>
+</html>

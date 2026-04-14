@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Order</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/customer.css">
+</head>
+
+  <body class="customer-page">
+
+  <div>
+
+    <header class="headder">
+      <h1>well come to hotel-name</h1>
+    </header>
+
+    <section class="hero-banner" aria-label="Hotel welcome banner">
+      <div class="hero-inner">
+        <div class="hero-kicker">Fresh • Fast • Tasty</div>
+        <div class="hero-title">Choose your table and order</div>
+        <div class="hero-subtitle">Your order status updates live with a countdown when it’s preparing.</div>
+      </div>
+    </section>
+    <div class="customer-content2">
+      <h2 class="customer-menu-title">Menu</h2>
+      <p class="customer-subtitle">Pick your table and choose quantities to place the order.</p>
+
+      <form method="POST" id="customerOrderForm">
+        <div class="table_selection">
+        <label>Table</label>
+        <input type="hidden" id="table" name="table" required>
+        <button type="button" id="selectedTableToggle" class="table-card table-selected-toggle" hidden></button>
+        <div class="table-grid" id="tableGrid">
+          {% for table in tables %}
+          <button type="button" class="table-card" data-table="{{table.id}}">Table {{table.id}}</button>
+          {% endfor %}
+        </div>
+        </div>
+
+        <div id="selectTableHint" class="select-table-hint">
+          Click your table to see the menu.
+        </div>
+
+        <div id="menuSection" class="menu-section" hidden>
+          <div class="food-filters" role="group" aria-label="Food type filter">
+            <button type="button" class="filter-btn is-active" data-filter="all">All</button>
+            <button type="button" class="filter-btn" data-filter="veg">Veg</button>
+            <button type="button" class="filter-btn" data-filter="non-veg">Non Veg</button>
+          </div>
+
+          <div class="menu-grid" id="menuGrid">
+            {% for item in menu %}
+            <div class="menu-item" data-type="{{ item.food_type }}">
+              {% if item.image_path %}
+              <img class="menu-img" src="/static/{{ item.image_path }}" alt="{{ item.food }}">
+              {% endif %}
+              <div class="menu-info">
+                <div class="menu-name">{{item.food}} ({{item.food_type|upper}})</div>
+                <div class="menu-price">₹{{item.price}}</div>
+              </div>
+              <input type="hidden" name="foods" value="{{item.food}}">
+              <input type="hidden" name="qtys" value="0" class="qty-input">
+              <div class="qty-control" aria-label="Quantity control">
+                <button type="button" class="qty-btn qty-minus" aria-label="Decrease quantity">-</button>
+                <span class="qty-value" aria-live="polite">0</span>
+                <button type="button" class="qty-btn qty-plus" aria-label="Increase quantity">+</button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </form>
+
+      <div class="customer-actions">
+        <div id="totalAmount" class="total-amount" hidden>Total: ₹0</div>
+        <button type="submit" id="placeOrderBtn" form="customerOrderForm" disabled hidden>Place Order</button>
+      </div>
+
+      <section id="orderStatusPanel" class="order-status-panel" hidden>
+        <div class="order-status-header">
+          <h3 class="order-status-title">Order Status</h3>
+          <button type="button" id="cancelAllBtn" class="cancel-all-btn" title="Cancel waiting/preparing items">
+            Cancel Pending
+          </button>
+        </div>
+        <div id="orderStatusList" class="order-status-list"></div>
+      </section>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script>
+    (function () {
+      const tableInput = document.getElementById("table");
+      const tableButtons = Array.from(document.querySelectorAll("#tableGrid .table-card"));
+      const selectedTableToggle = document.getElementById("selectedTableToggle");
+      const tableGrid = document.getElementById("tableGrid");
+      const menuSection = document.getElementById("menuSection");
+      const hint = document.getElementById("selectTableHint");
+      const placeOrderBtn = document.getElementById("placeOrderBtn");
+      const totalAmountEl = document.getElementById("totalAmount");
+      const orderStatusPanel = document.getElementById("orderStatusPanel");
+      const orderStatusList = document.getElementById("orderStatusList");
+      const cancelAllBtn = document.getElementById("cancelAllBtn");
+      const toast = document.getElementById("toast");
+
+      const STORAGE_KEY = "punit_selected_table";
+
+      let pollTimer = null;
+      let tickTimer = null;
+      let groupsState = [];
+      let deadlineByKey = new Map(); // key => deadlineEpochMs
+      let lastReadyAtByFood = new Map(); // food => ready_at
+      let initialStatusLoaded = false;
+      let currentTableId = "";
+      let dismissUntilByKey = new Map(); // key => epochMs (for canceled/rejected rows)
+
+      function showToast(message, variant) {
+        if (!toast) return;
+        toast.textContent = message;
+        toast.classList.toggle("is-success", variant === "success");
+        toast.classList.toggle("is-error", variant === "error");
+        toast.hidden = false;
+        toast.classList.add("is-visible");
+        window.clearTimeout(showToast._t);
+        showToast._t = window.setTimeout(() => {
+          toast.classList.remove("is-visible");
+          window.setTimeout(() => {
+            toast.hidden = true;
+          }, 180);
+        }, 2600);
+      }
+
+      function formatClock(seconds) {
+        const s = Math.max(0, Math.floor(Number(seconds) || 0));
+        const mm = String(Math.floor(s / 60)).padStart(2, "0");
+        const ss = String(s % 60).padStart(2, "0");
+        return mm + ":" + ss;
+      }
+
+      function statusLabel(status) {
+        const s = String(status || "").toLowerCase();
+        if (s === "waiting") return "Ordered";
+        if (s === "accepted") return "Preparing";
+        if (s === "ready") return "Ready";
+        if (s === "rejected") return "Rejected";
+        if (s === "canceled") return "Canceled";
+        return s || "Unknown";
+      }
+
+      function escapeHtml(input) {
+        return String(input || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function updateVisibility() {
+        const hasSelection = Boolean(tableInput && tableInput.value);
+
+        if (selectedTableToggle) {
+          if (hasSelection) {
+            selectedTableToggle.hidden = false;
+            selectedTableToggle.textContent = "Table " + tableInput.value + " (change)";
+          } else {
+            selectedTableToggle.hidden = true;
+            selectedTableToggle.textContent = "";
+          }
+        }
+
+        if (tableGrid) {
+          tableGrid.hidden = hasSelection;
+        }
+
+        if (menuSection) menuSection.hidden = !hasSelection;
+        if (hint) hint.hidden = hasSelection;
+        if (totalAmountEl) totalAmountEl.hidden = !hasSelection;
+        if (placeOrderBtn) {
+          placeOrderBtn.disabled = !hasSelection;
+          placeOrderBtn.hidden = !hasSelection;
+        }
+        if (orderStatusPanel) orderStatusPanel.hidden = !hasSelection;
+      }
+
+      function selectTable(tableId, opts) {
+        const id = String(tableId || "").trim();
+        if (!id) return;
+        if (currentTableId !== id) {
+          currentTableId = id;
+          groupsState = [];
+          deadlineByKey = new Map();
+          lastReadyAtByFood = new Map();
+          initialStatusLoaded = false;
+          dismissUntilByKey = new Map();
+        }
+        if (tableInput) tableInput.value = id;
+        tableButtons.forEach((b) => b.classList.toggle("is-selected", (b.getAttribute("data-table") || "") === id));
+        applyFilter("all");
+        filterButtons.forEach((b) =>
+          b.classList.toggle("is-active", (b.getAttribute("data-filter") || "all") === "all")
+        );
+        try {
+          window.localStorage.setItem(STORAGE_KEY, id);
+        } catch (_) { }
+        updateVisibility();
+        startPolling();
+        if (!(opts && opts.silent)) showToast("Table " + id + " selected", "success");
+      }
+
+      tableButtons.forEach((btn) => {
+        btn.addEventListener("click", function () {
+          selectTable(this.getAttribute("data-table") || "");
+        });
+      });
+
+      if (selectedTableToggle) {
+        selectedTableToggle.addEventListener("click", function () {
+          if (tableGrid) tableGrid.hidden = false;
+          selectedTableToggle.hidden = true;
+        });
+      }
+
+      const filterButtons = Array.from(document.querySelectorAll(".filter-btn"));
+      const menuItems = Array.from(document.querySelectorAll(".menu-item"));
+
+      function normalizeFoodType(raw) {
+        let t = String(raw || "").trim().toLowerCase();
+        t = t.replace(/[\s_]+/g, "-").replace(/-+/g, "-");
+        if (t === "nonveg") t = "non-veg";
+        return t;
+      }
+
+      function applyFilter(filter) {
+        const f = normalizeFoodType(filter);
+        menuItems.forEach((item) => {
+          const t = normalizeFoodType(item.getAttribute("data-type"));
+          item.hidden = !(f === "all" || t === f);
+        });
+      }
+
+      filterButtons.forEach((btn) => {
+        btn.addEventListener("click", function () {
+          const filter = this.getAttribute("data-filter") || "all";
+          filterButtons.forEach((b) => b.classList.toggle("is-active", b === this));
+          applyFilter(filter);
+        });
+      });
+
+      function parsePrice(text) {
+        const raw = String(text || "").replace(/[^\d.]/g, "");
+        const n = parseFloat(raw);
+        return Number.isFinite(n) ? n : 0;
+      }
+
+      function updateTotal() {
+        let total = 0;
+        menuItems.forEach((item) => {
+          const qtyInput = item.querySelector(".qty-input");
+          const priceEl = item.querySelector(".menu-price");
+          if (!qtyInput || !priceEl) return;
+
+          const qty = parseInt(qtyInput.value || "0", 10) || 0;
+          const price = parsePrice(priceEl.textContent);
+          total += qty * price;
+        });
+
+        if (totalAmountEl) {
+          totalAmountEl.textContent = "Total: ₹" + String(total);
+        }
+      }
+
+      document.addEventListener("click", function (e) {
+        const target = e.target;
+        if (!(target instanceof HTMLElement)) return;
+
+        const btn = target.closest(".qty-btn");
+        if (!btn) return;
+
+        const isPlus = btn.classList.contains("qty-plus");
+        const isMinus = btn.classList.contains("qty-minus");
+        if (!isPlus && !isMinus) return;
+
+        const menuItem = btn.closest(".menu-item");
+        if (!menuItem) return;
+
+        const qtyInput = menuItem.querySelector(".qty-input");
+        const qtyValue = menuItem.querySelector(".qty-value");
+        if (!qtyInput || !qtyValue) return;
+
+        const current = parseInt(qtyInput.value || "0", 10) || 0;
+        const next = isPlus ? current + 1 : Math.max(0, current - 1);
+        qtyInput.value = String(next);
+        qtyValue.textContent = String(next);
+        updateTotal();
+      });
+
+      async function fetchOrders() {
+        const tableId = String(tableInput && tableInput.value ? tableInput.value : "").trim();
+        if (!tableId) return;
+
+        try {
+          const res = await fetch("/customer_orders?table=" + encodeURIComponent(tableId), { cache: "no-store" });
+          const data = await res.json();
+          if (!data || !data.ok) return;
+
+          const groups = Array.isArray(data.groups) ? data.groups : [];
+          groupsState = groups;
+
+          // Update countdown deadlines.
+          const nextDeadlines = new Map();
+          groups.forEach((g) => {
+            const status = String(g.status || "");
+            if (status !== "accepted") return;
+            const remaining = Number(g.remaining_seconds);
+            if (!Number.isFinite(remaining)) return;
+            const key = String(g.food || "") + "::" + status;
+            nextDeadlines.set(key, Date.now() + Math.max(0, remaining) * 1000);
+          });
+          deadlineByKey = nextDeadlines;
+
+          // Make canceled/rejected items disappear after ~2.5s.
+          const nowMs = Date.now();
+          const transientStatuses = new Set(["canceled", "rejected"]);
+          const presentTransientKeys = new Set();
+          groups.forEach((g) => {
+            const status = String(g.status || "");
+            if (!transientStatuses.has(status)) return;
+            const key = String(g.food || "") + "::" + status;
+            presentTransientKeys.add(key);
+            if (!dismissUntilByKey.has(key)) {
+              dismissUntilByKey.set(key, nowMs + 2500);
+            }
+          });
+          // Cleanup old transient keys that no longer exist.
+          Array.from(dismissUntilByKey.keys()).forEach((k) => {
+            if (!presentTransientKeys.has(k)) dismissUntilByKey.delete(k);
+          });
+
+          // Popups for newly-ready items.
+          groups.forEach((g) => {
+            if (String(g.status || "") !== "ready") return;
+            const food = String(g.food || "");
+            const readyAt = Number(g.ready_at);
+            if (!food || !Number.isFinite(readyAt)) return;
+            const last = lastReadyAtByFood.get(food);
+            if (initialStatusLoaded && (last == null || readyAt > last)) {
+              showToast(food + " is ready!", "success");
+            }
+            lastReadyAtByFood.set(food, readyAt);
+          });
+
+          initialStatusLoaded = true;
+          renderOrderStatus();
+        } catch (_) {
+          // ignore (offline, etc.)
+        }
+      }
+
+      function renderOrderStatus() {
+        if (!orderStatusList) return;
+        const nowMs = Date.now();
+        const groups = (groupsState || []).filter((g) => {
+          const status = String(g.status || "");
+          if (status !== "canceled" && status !== "rejected") return true;
+          const key = String(g.food || "") + "::" + status;
+          const until = dismissUntilByKey.get(key);
+          return until == null || nowMs < until;
+        });
+
+        if (!groups.length) {
+          orderStatusList.innerHTML = '<div class="order-empty">No active orders yet.</div>';
+          return;
+        }
+
+        orderStatusList.innerHTML = groups.map((g) => {
+          const food = String(g.food || "");
+          const foodEsc = escapeHtml(food);
+          const status = String(g.status || "");
+          const qty = Number(g.qty || 0) || 0;
+          const etaMinutes = Number(g.eta_minutes || 0) || 0;
+          const key = food + "::" + status;
+          const label = statusLabel(status);
+
+          let note = "";
+          if (status === "accepted") {
+            const deadline = deadlineByKey.get(key);
+            const remaining = deadline ? Math.max(0, Math.floor((deadline - Date.now()) / 1000)) : null;
+            note = remaining != null ? ("• " + formatClock(remaining)) : (etaMinutes > 0 ? ("• " + String(etaMinutes) + " min") : "");
+          } else if (status === "waiting") {
+            note = "• Waiting for chef";
+          }
+
+          const canCancel = status === "waiting" || status === "accepted";
+          const cancelBtn = canCancel
+            ? ('<button type="button" class="cancel-btn" data-food="' + encodeURIComponent(food) + '" data-status="' + encodeURIComponent(status) + '">Cancel</button>')
+            : "";
+
+          const check = status === "ready" ? '<div class="ready-check" aria-label="Ready">✓</div>' : "";
+
+          return (
+            '<div class="status-item status-' + status + '">' +
+              '<div class="status-main">' +
+                '<div class="status-food">' + (qty > 1 ? (qty + "× ") : "") + foodEsc + '</div>' +
+                '<div class="status-meta">' +
+                  '<span class="status-badge badge-' + status + '">' + label + '</span>' +
+                  (note ? ('<span class="status-note">' + note + '</span>') : '') +
+                '</div>' +
+              '</div>' +
+              '<div class="status-actions">' + cancelBtn + check + '</div>' +
+            '</div>'
+          );
+        }).join("");
+      }
+
+      function startPolling() {
+        if (pollTimer) return;
+        fetchOrders();
+        pollTimer = window.setInterval(fetchOrders, 3000);
+        if (!tickTimer) {
+          tickTimer = window.setInterval(() => {
+            // only re-render countdowns; keep DOM changes minimal by re-rendering list
+            if (!deadlineByKey.size) return;
+            renderOrderStatus();
+          }, 1000);
+        }
+      }
+
+      async function cancelOrder(food, status) {
+        const tableId = String(tableInput && tableInput.value ? tableInput.value : "").trim();
+        if (!tableId) return;
+
+        try {
+          const res = await fetch("/customer_cancel", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ table_id: tableId, food: food || "", status: status || "" }),
+          });
+          const data = await res.json().catch(() => null);
+          if (data && data.ok) {
+            showToast("Canceled", "success");
+            fetchOrders();
+          } else {
+            showToast("Cancel failed", "error");
+          }
+        } catch (_) {
+          showToast("Cancel failed", "error");
+        }
+      }
+
+      if (orderStatusPanel) {
+        orderStatusPanel.addEventListener("click", function (e) {
+          const target = e.target;
+          if (!(target instanceof HTMLElement)) return;
+          const btn = target.closest(".cancel-btn");
+          if (!btn) return;
+          const food = decodeURIComponent(btn.getAttribute("data-food") || "");
+          const status = decodeURIComponent(btn.getAttribute("data-status") || "");
+          cancelOrder(food, status);
+        });
+      }
+
+      if (cancelAllBtn) {
+        cancelAllBtn.addEventListener("click", async function () {
+          const tableId = String(tableInput && tableInput.value ? tableInput.value : "").trim();
+          if (!tableId) return;
+          try {
+            const res = await fetch("/customer_cancel", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ table_id: tableId }),
+            });
+            const data = await res.json().catch(() => null);
+            if (data && data.ok) {
+              showToast("Pending items canceled", "success");
+              fetchOrders();
+            } else {
+              showToast("Cancel failed", "error");
+            }
+          } catch (_) {
+            showToast("Cancel failed", "error");
+          }
+        });
+      }
+
+      // Restore last selected table after reload.
+      try {
+        const saved = window.localStorage.getItem(STORAGE_KEY);
+        if (saved) selectTable(saved, { silent: true });
+      } catch (_) { }
+
+      updateTotal();
+      updateVisibility();
+    })();
+  </script>
+</body>
+
+</html>

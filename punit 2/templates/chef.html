@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chef Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/panels/chef.css">
+</head>
+
+<body class="chef-page">
+
+<a href="/" class="corner-home">Home</a>
+<a href="/chef_logout" class="corner-logout">Logout</a>
+
+<h1>Chef Panel</h1>
+
+<table>
+
+<tr>
+<th>Table</th>
+<th>Food</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+
+{% for order in orders %}
+
+<tr>
+
+<td>{{order.table_id}}</td>
+<td>
+  {% if order.qty and order.qty > 1 %}{{order.qty}}* {% endif %}{{order.food}}
+</td>
+<td class="chef-status {{order.status}}">{{order.status}}</td>
+
+<td>
+{% if order.status == "waiting" %}
+  <form method="POST" class="inline-form mr6">
+    <input type="hidden" name="group_table" value="{{order.table_id}}">
+    <input type="hidden" name="group_food" value="{{order.food}}">
+    <input type="text" name="time" placeholder="minutes">
+    <button class="chef-accept-btn">Accept</button>
+  </form>
+  <form method="POST" class="inline-form">
+    <input type="hidden" name="group_table" value="{{order.table_id}}">
+    <input type="hidden" name="group_food" value="{{order.food}}">
+    <button name="reject" value="1" class="chef-reject-btn">Reject</button>
+  </form>
+{% else %}
+  {% if order.status == "accepted" %}
+    ETA: {{order.time}} min
+    {% if order.remaining_seconds is defined %}
+      <div class="chef-eta-note">
+        Remaining: {{ ((order.remaining_seconds + 59) // 60) }} min
+      </div>
+    {% endif %}
+    <form method="POST" class="inline-form mt8">
+      <input type="hidden" name="group_table" value="{{order.table_id}}">
+      <input type="hidden" name="group_food" value="{{order.food}}">
+      <button name="ready" value="1" class="chef-ready-btn">Ready</button>
+    </form>
+  {% else %}
+    <em>{{order.status}}</em>
+  {% endif %}
+{% endif %}
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</body>
+</html>
+

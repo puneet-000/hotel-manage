@@ -1,0 +1,141 @@
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body.chef-page{
+  min-height: 100vh;
+  background: #fff7ea;
+  font-family: "DM Sans", Arial, sans-serif;
+  color: #2d210f;
+  max-width: 980px;
+  margin: 28px auto;
+  padding: 16px;
+}
+
+h1{
+  background-color: rgba(97, 73, 40, 0.758);
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-align: center;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.corner-home{
+  position: fixed;
+  right: 12px;
+  top: 12px;
+  z-index: 10;
+  background-color: rgba(59, 42, 18, 0.857);
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+
+.corner-logout{
+  position: fixed;
+  right: 86px;
+  top: 12px;
+  z-index: 10;
+  background-color: rgba(59, 42, 18, 0.857);
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+
+table{
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e2c79f;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+th, td{
+  padding: 12px 10px;
+  border: 1px solid #e2c79f;
+  text-align: center;
+}
+
+th{
+  background: #fff3de;
+  font-weight: 700;
+  color: #2d210f;
+}
+
+input[type="text"]{
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: #fff;
+  width: 90px;
+}
+
+button{
+  background-color: rgba(59, 42, 18, 0.857);
+  color: #fff;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+button:hover{
+  filter: brightness(0.95);
+}
+
+.inline-form{display:inline-block}
+.mr6{margin-right:6px}
+.mt8{margin-top:8px}
+
+.chef-reject-btn{background: #c0392b}
+.chef-ready-btn{background: #1f9d55}
+
+.chef-eta-note{
+  font-size: 12px;
+  color: #5a3e1b;
+  margin-top: 4px;
+}
+
+.chef-status{
+  text-transform: capitalize;
+  font-weight: 700;
+}
+
+@media (max-width: 680px){
+  body.chef-page{
+    margin: 0 auto;
+    padding: 12px;
+  }
+
+  .corner-home,
+  .corner-logout{
+    position: static;
+    display: inline-flex;
+    margin: 0 8px 10px 0;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  table{
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  th, td{
+    white-space: nowrap;
+  }
+
+  input[type="text"]{
+    width: 80px;
+  }
+}

@@ -1,0 +1,108 @@
+html,body{height:100%;margin:0}
+body{overflow:hidden;font-family:Arial,sans-serif}
+
+#slideshow{position:fixed;inset:0;background:#000}
+#slideshow::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25) 35%, rgba(0,0,0,.65));
+  z-index:1;
+  pointer-events:none;
+}
+
+#slideshow .slide{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  opacity:1;
+}
+
+.hotel-name{
+  position:fixed;
+  top:16px;
+  left:16px;
+  z-index:2;
+  color:#fff;
+  font-size:clamp(18px, 3.2vw, 32px);
+  font-weight:900;
+  letter-spacing:.3px;
+  text-shadow:0 10px 28px rgba(0,0,0,.55);
+}
+
+.hero{
+  position:fixed;
+  inset:0;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:84px 16px 120px 16px;
+}
+
+.headder2{
+  color:#fff;
+  font-size:clamp(22px, 4.4vw, 44px);
+  font-weight:900;
+  font-family:Georgia,"Times New Roman",serif;
+  letter-spacing:.4px;
+  text-shadow:0 12px 32px rgba(0,0,0,.55);
+  margin:0;
+  text-align:center;
+}
+
+.headder3{
+  margin-top:14px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:center;
+}
+
+.hook{
+  color:#fff;
+  font-size:clamp(13px, 2.2vw, 18px);
+  font-weight:700;
+  text-shadow:0 10px 28px rgba(0,0,0,.55);
+  background:rgba(0,0,0,.25);
+  border:1px solid rgba(255,255,255,.14);
+  padding:10px 12px;
+  border-radius:12px;
+  max-width:min(760px, calc(100vw - 32px));
+  text-align:center;
+  backdrop-filter:blur(4px);
+}
+
+.nav{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:16px;
+  z-index:3;
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:10px;
+  padding:0 12px;
+}
+
+.nav a{
+  font:800 14px/1 Arial,sans-serif;
+  color:#fff;
+  text-decoration:none;
+  background:rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.14);
+  padding:11px 14px;
+  border-radius:12px;
+}
+
+@media (max-width:520px){
+  body{overflow:auto}
+  .hero{position:relative;inset:auto;min-height:calc(100vh - 120px)}
+  #slideshow{position:relative;min-height:100vh}
+  .nav{position:sticky;bottom:0;padding:12px;background:rgba(0,0,0,.25);backdrop-filter:blur(6px)}
+  .nav a{flex:1 1 auto;text-align:center}
+}

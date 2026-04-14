@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bill Detail</title>
+  <link rel="stylesheet" href="/static/css/billing.css">
+</head>
+
+<body class="billing-page">
+  <a href="/" class="corner-home">Home</a>
+  <a href="/billing_history" class="corner-history">Back</a>
+  <a href="/billing_logout" class="corner-logout">Logout</a>
+
+  <h1>Bill Detail</h1>
+
+  {% if not ok %}
+    <div class="empty-note">{{ error or "Bill not found." }}</div>
+  {% else %}
+    <div class="bill-card">
+      <div class="bill-head">
+        <div class="bill-title">Bill #{{ bill["id"] }} • Table {{ bill["table_id"] }}</div>
+      </div>
+      {% if used_legacy %}
+        <div class="legacy-note">Note: old bills may show current menu prices.</div>
+      {% endif %}
+      <div class="bill-total">Total: ₹{{ bill["total"] }}</div>
+    </div>
+
+    {% if items %}
+      <table>
+        <tr>
+          <th>Food</th>
+          <th>Qty</th>
+          <th>Price</th>
+          <th>Line Total</th>
+        </tr>
+        {% for it in items %}
+        <tr>
+          <td>{{ it["food"] }}</td>
+          <td>{{ it["qty"] }}</td>
+          <td>₹{{ it["price"] }}</td>
+          <td>₹{{ it["line_total"] }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <div class="empty-note">No items found for this bill.</div>
+    {% endif %}
+  {% endif %}
+</body>
+</html>

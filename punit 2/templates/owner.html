@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owner Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/owner.css">
+</head>
+
+<body>
+<div class="owner-container">
+
+<header class="owner-header">
+<div class="owner-badge">✦ Restaurant Control
+<h1>Owner Panel</h1></div>
+<a class="owner-home-top" href="/">Home</a>
+<a class="owner-logout-top" href="/owner_logout">Logout</a>
+</header>
+
+<div class="owner-divider"></div>
+
+<section class="owner-card">
+<h2>Add Food</h2>
+
+<form method="POST" class="owner-inline-form" enctype="multipart/form-data">
+<input type="text" name="food" placeholder="Food name">
+<input type="number" name="price" placeholder="Price">
+<select name="food_type">
+<option value="veg">Veg</option>
+<option value="non-veg">Non Veg</option>
+</select>
+<input type="file" name="food_image" accept="image/*">
+<button>Add</button>
+</form>
+</section>
+
+<section class="owner-card">
+<h2>Staff Logins</h2>
+<p class="owner-note">Set or change passwords (leave blank to keep current).</p>
+<div class="owner-staff-status">
+  <div>Chef password: <strong>{% if chef_pw_set %}SET{% else %}NOT SET{% endif %}</strong></div>
+  <div>Billing password: <strong>{% if billing_pw_set %}SET{% else %}NOT SET{% endif %}</strong></div>
+</div>
+
+<form method="POST" class="owner-inline-form">
+  <input type="password" name="chef_password" placeholder="Chef password">
+  <input type="password" name="billing_password" placeholder="Billing password">
+  <button type="submit" name="staff_pw_save" value="1">Save Passwords</button>
+</form>
+</section>
+
+<section class="owner-card">
+<h2 class="menu ">Menu</h2>
+
+<ul class="owner-list">
+{% for item in menu %}
+<li class="owner-row">
+<span class="owner-row-left">
+{% if item.image_path %}
+<img class="owner-food-img" src="/static/{{ item.image_path }}" alt="{{ item.food }}">
+{% endif %}
+<span>
+{{item.food}} ({{item.food_type|upper}}) - ₹{{item.price}}
+</span>
+</span>
+<form method="POST">
+<button
+name="food_remove"
+value="{{item.id}}">
+Delete
+</button>
+</form>
+</li>
+{% endfor %}
+</ul>
+</section>
+
+<section class="owner-card">
+<h2>Tables</h2>
+
+<form method="POST" class="owner-inline-form">
+<button name="table_add">Add Table</button>
+</form>
+
+<ul class="owner-list">
+{% for table in tables %}
+<li class="owner-row">
+<span>
+Table {{table.id}}
+</span>
+<form method="POST">
+<button
+name="table_remove"
+value="{{table.id}}">
+Remove
+</button>
+</form>
+
+</li>
+{% endfor %}
+</ul>
+</section>
+
+</div>
+
+</body>
+</html>

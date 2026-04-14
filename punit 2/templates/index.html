@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Front Page</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/front.css') }}?v={{ cache_bust }}">
+</head>
+<body>
+  <div class="hotel-name">Hotel Name</div>
+  <div id="slideshow">
+    <img class="slide" src="/static/front/slider-1.webp?v={{ cache_bust }}" alt="Food hero">
+
+    <div class="hero">
+      <h2 class="headder2">Fresh Food. Fast Service. Big Flavors.</h2>
+      <div class="headder3" aria-label="Food highlights">
+        <div class="hook">Hot &amp; hygienic — straight from the kitchen.</div>
+        <div class="hook">Made fresh every order, served with care.</div>
+        <div class="hook">From spicy to sweet — pick your mood.</div>
+        <div class="hook">Quick bites, family meals, and chef specials.</div>
+        <div class="hook">Taste that feels like home.</div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <a href="/owner">Owner Panel</a>
+      <a href="/customer">Customer Order</a>
+      <a href="/chef">Chef Panel</a>
+      <a href="/billing">Billing Counter</a>
+    </div>
+ 
+  </div>
+</body>
+</html>
