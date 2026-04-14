@@ -176,6 +176,8 @@ body.customer-page {
     text-align: center;
     width: 100%;
     font-weight: 800;
+    display: block;
+    text-decoration: none;
 }
 
 .table-card:hover {
