@@ -18,6 +18,7 @@ OWNER_LOGIN_PASSWORD = os.environ.get("OWNER_LOGIN_PASSWORD", "ADMIN123")
 STATIC_UPLOAD_SUBDIR = os.path.join("uploads", "menu")
 ALLOWED_IMAGE_EXTS = {"png", "jpg", "jpeg", "webp", "gif"}
 DB_PATH = os.environ.get("DB_PATH") or os.path.join(app.root_path, "database.db")
+DEFAULT_TABLE_COUNT = max(0, int(os.environ.get("DEFAULT_TABLE_COUNT", "5") or "5"))
 
 
 def is_allowed_image(filename: str) -> bool:
@@ -108,10 +109,20 @@ def table_exists(db, table_id) -> bool:
     return row is not None
 
 
+def ensure_default_tables(conn) -> None:
+    row = conn.execute("SELECT COUNT(*) AS cnt FROM tables").fetchone()
+    if not row or int(row["cnt"] or 0) > 0 or DEFAULT_TABLE_COUNT <= 0:
+        return
+    for _ in range(DEFAULT_TABLE_COUNT):
+        conn.execute("INSERT INTO tables DEFAULT VALUES")
+    conn.commit()
+
+
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     ensure_schema(conn)
+    ensure_default_tables(conn)
     return conn
 
 
