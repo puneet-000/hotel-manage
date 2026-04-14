@@ -12,7 +12,7 @@
 4. Render will detect `render.yaml` and create the web service automatically.
 
 ## Important notes
-- The app uses SQLite and defaults to `punit 2/database.db`.
+- The app uses SQLite and defaults to `database.db`.
 - On Render free instances, local filesystem data can be lost after redeploys or restarts.
 - If you want the database to persist, create a Persistent Disk and set `DB_PATH=/var/data/database.db`.
 - Mount that disk at `/var/data`.

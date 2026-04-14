@@ -8,6 +8,9 @@ import time as pytime
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "punit-dev-secret-key")
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 OWNER_LOGIN_ID = os.environ.get("OWNER_LOGIN_ID", "ADMIN")
 OWNER_LOGIN_PASSWORD = os.environ.get("OWNER_LOGIN_PASSWORD", "ADMIN123")
@@ -134,6 +137,14 @@ def billing_is_logged_in() -> bool:
     return bool(session.get("billing_logged_in"))
 
 
+def mark_role_logged_in(role_key: str) -> None:
+    session.permanent = False
+    session.pop("owner_logged_in", None)
+    session.pop("chef_logged_in", None)
+    session.pop("billing_logged_in", None)
+    session[role_key] = True
+
+
 @app.route("/owner_login", methods=["GET", "POST"])
 def owner_login():
     next_url = (request.args.get("next") or "").strip()
@@ -143,7 +154,7 @@ def owner_login():
         password = (request.form.get("password") or "").strip()
 
         if login_id == OWNER_LOGIN_ID and password == OWNER_LOGIN_PASSWORD:
-            session["owner_logged_in"] = True
+            mark_role_logged_in("owner_logged_in")
             return redirect(next_url or url_for("owner"))
 
         return render_template(
@@ -630,7 +641,7 @@ def chef_login():
         password = (request.form.get("password") or "").strip()
 
         if check_password_hash(pw_hash, password):
-            session["chef_logged_in"] = True
+            mark_role_logged_in("chef_logged_in")
             return redirect(next_url or url_for("chef"))
 
         return render_template(
@@ -965,7 +976,7 @@ def billing_login():
         password = (request.form.get("password") or "").strip()
 
         if check_password_hash(pw_hash, password):
-            session["billing_logged_in"] = True
+            mark_role_logged_in("billing_logged_in")
             return redirect(next_url or url_for("billing"))
 
         return render_template(
